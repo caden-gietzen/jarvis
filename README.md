@@ -10,6 +10,10 @@ replies is shown in the terminal and appended to `logs/<date>.log`.
 
 ## One-time setup
 
+You only need this repo's URL. The guided setup (SETUP.md, step 3a) also fetches the small companion repo
+[jarvis-workspace](https://github.com/caden-gietzen/jarvis-workspace) (notes templates and helper scripts) for you, after
+asking once; you do not have to find or clone it yourself.
+
 Jarvis drives the standalone Claude Code CLI, which needs its own sign-in:
 
     claude auth login

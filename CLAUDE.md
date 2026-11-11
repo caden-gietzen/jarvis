@@ -9,6 +9,13 @@ asks for setup: **read SETUP.md in this folder and follow it.** Treat it as a gu
 Windows and the macOS/Linux parts are untested. Ask which operating system they use FIRST, and ask before every install
 or account step. Never use anyone else's tokens, topics or hostnames.
 
+## The workspace folder (standing rule)
+
+Jarvis uses a companion folder, `JARVIS_WORKSPACE_ROOT` or `../jarvis-workspace` (repo
+`https://github.com/caden-gietzen/jarvis-workspace`). If it is missing while you are working in this repo, do not fail
+or work around it: say what it is in one plain sentence and, with the user's yes, run
+`python scripts/ensure_workspace.py --clone` (details: SETUP.md section 3a). Without `--clone` the script only reports.
+
 ## Working on the code
 
 - Tests are standalone scripts, run from the repo root: `.venv\Scripts\python.exe tests\test_hangs.py`

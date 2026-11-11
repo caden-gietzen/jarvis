@@ -15,6 +15,15 @@ LOG_DIR = ROOT / "logs"
 WORKSPACE_ROOT = Path(os.environ.get("JARVIS_WORKSPACE_ROOT", str(ROOT.parent / "jarvis-workspace")))
 
 
+def workspace_missing_message(root: Path = None) -> "str | None":
+    """One line for the log or for speech when the workspace folder is absent, else None."""
+    root = Path(root or WORKSPACE_ROOT)
+    if root.is_dir():
+        return None
+    return (f"workspace folder not found: {root} (see SETUP.md section 3a, or run "
+            "scripts/ensure_workspace.py --clone)")
+
+
 def load_config(path: Path = CONFIG_PATH) -> dict:
     with open(path, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)

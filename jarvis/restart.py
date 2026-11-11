@@ -16,7 +16,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from .config import WORKSPACE_ROOT
+from .config import WORKSPACE_ROOT, workspace_missing_message
 
 ROOT = Path(__file__).resolve().parent.parent
 WINDOW_FILE = ROOT / ".jarvis_window.json"
@@ -206,6 +206,9 @@ def schedule_return(submit, speak, log, enabled=True, usage_continue_pending=Fal
                       + ("continuing" if enabled and not usage_continue_pending else "not continuing"))
             if not enabled or usage_continue_pending:
                 return
+            missing = workspace_missing_message()
+            if missing:
+                safe(log, missing)  # the continue prompt still goes in; it just has no HANDOFF.md to read
             if info["count"] >= LOOP_MAX:
                 safe(speak, LOOP_LINE)
                 return

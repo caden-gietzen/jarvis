@@ -214,7 +214,9 @@ def _append_handoff(kind: str, resets_at: float) -> None:
         line = (f"{datetime.now():%Y-%m-%d %H:%M}: usage limit ({kind}) hit; resets {_fmt(resets_at)}; "
                 "Jarvis will restart itself at the reset and continue by itself (jarvis/usage_monitor.py). "
                 "Read open-questions.md and the queue, resume unfinished work.\n")
-        with Path(HANDOFF_FILE).open("a", encoding="utf-8") as f:
+        hf = Path(HANDOFF_FILE)
+        hf.parent.mkdir(parents=True, exist_ok=True)  # a missing workspace folder is created, never a crash
+        with hf.open("a", encoding="utf-8") as f:
             f.write(line)
     except Exception:
         pass

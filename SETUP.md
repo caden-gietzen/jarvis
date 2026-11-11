@@ -22,8 +22,8 @@ Rules for you while doing this:
 4. Do not touch the user's existing `~/.claude` setup (settings, CLAUDE.md, skills) except to add the optional skills in
    section 11, and only after they say yes. Do not change their Claude Code permission settings. The one Jarvis file
    about permissions you may edit, and only with their yes, is `DEFAULT_WORKSPACE` in `jarvis/permissions.py` (section 4a).
-5. Everything optional (phone access, push notifications, Chrome extension, VS Code extension, skills, workspace
-   notes) is optional. Ask whether they want each one; do not set up what they do not want.
+5. Everything optional (phone access, push notifications, Chrome extension, VS Code extension, skills) is optional.
+   The one companion step that is NOT optional is the workspace folder (section 3a), but it still needs the user's yes. Ask whether they want each one; do not set up what they do not want.
 6. Do not `git push` anything, and do not change this repo's git remotes.
 
 ### Ask me about (collect these before you start; keep answers short)
@@ -44,7 +44,8 @@ Rules for you while doing this:
   if so whether Jarvis should **keep the computer awake while waiting** for a limit to reset (section 10).
 - Which folder is their **dev folder** (where they keep projects Claude may work in with full permission) (section 4a).
 - Whether they use Chrome (for the browser extension) and VS Code (for the show-code extension).
-- Whether they want the author's **skills and agents** (section 11) and a **workspace notes folder** (section 12).
+- Whether they want the author's **skills and agents** (section 11). (The workspace folder, section 3a, is part of the
+  core setup; you ask once for a yes when you get there, not up front.)
 - Which Claude model to start with (`sonnet`, `opus`, `haiku`, or their Claude Code default).
 
 ## 1. Windows-only parts (be honest about these)
@@ -98,7 +99,7 @@ Suggested layout (a folder that holds both repos; Jarvis uses its parent folder 
 ```
 ~/dev/
   jarvis/              <- this repo
-  jarvis-workspace/    <- optional notes + tooling (section 12)
+  jarvis-workspace/    <- companion repo: notes + templates + helper scripts (section 3a, fetched for them)
 ```
 
 If the user already cloned this repo somewhere, work from there; the sibling layout is just the default.
@@ -118,6 +119,32 @@ uv run python -c "import jarvis, faster_whisper, piper, openwakeword, sounddevic
 
 If `uv sync` fails on a package for the user's platform (for example a missing macOS wheel), report the exact error
 and propose an option instead of guessing; do not edit `pyproject.toml` or `uv.lock` without asking.
+
+## 3a. The workspace folder (core step, right after cloning; ask once)
+
+Jarvis has a companion repo, `https://github.com/caden-gietzen/jarvis-workspace`. The user was only given this repo's
+URL and may never have heard of it, so you fetch it for them. Say this in one plain sentence and ask for ONE yes:
+
+> Jarvis keeps a small notes folder next to itself, with note templates and a few helper scripts, so it can remember
+> where it was between sessions and restarts. It lives in a separate repo, `jarvis-workspace`; may I download it next
+> to this folder (`../jarvis-workspace`), or would you rather pick another location?
+
+Only after the yes, run the helper (standard library only; same on every OS; use `python3` if `python` is not there):
+
+```
+python scripts/ensure_workspace.py                 # report only: is the folder there?
+python scripts/ensure_workspace.py --clone         # clone ../jarvis-workspace if missing, copy the templates
+python scripts/ensure_workspace.py --clone --path <folder>   # another location (then also set JARVIS_WORKSPACE_ROOT)
+```
+
+What it does: if the folder is missing it runs `git clone https://github.com/caden-gietzen/jarvis-workspace <path>`, then
+copies `templates/*.md` to the folder's root (`HANDOFF.md`, `open-questions.md`, `future-tasks.md`, `long-term.md`,
+`completed-tasks.md`, `blocked.md`), never overwriting a file that already exists, and checks that git ignores those
+files there (they hold personal notes; the workspace README explains this). Read its output back to the user. If it
+warns that the files are not ignored, tell the user and do not commit them. If they chose another location, set
+`JARVIS_WORKSPACE_ROOT` to it for them (their shell profile or however they launch Jarvis; ask first). If the user says
+no, skip it: Jarvis still runs, it just logs `workspace folder not found` and cannot read or write `HANDOFF.md` (the
+restart and usage-limit "continue" steps lose their notes). Offer again later if the folder is ever missing.
 
 ## 4. Configure: `config.yaml`
 
@@ -142,7 +169,7 @@ and walk through the options that matter (all optional; the defaults work):
   `continue_after_intentional_restart`, `keep_awake_while_waiting` (off by default, section 10), `token_ledger`,
   `dictation_max_s`. Comments in the file explain each.
 
-Environment variables worth knowing: `JARVIS_WORKSPACE_ROOT` (the notes folder; default `../jarvis-workspace`),
+Environment variables worth knowing: `JARVIS_WORKSPACE_ROOT` (the notes folder from section 3a; default `../jarvis-workspace`),
 `JARVIS_BOOKS_ROOT` (folders of Markdown books shown by the Markdown preview; default `../textbooks`), `JARVIS_CODE_CMD` (full path to
 the VS Code `code` command if it is not on PATH), `JARVIS_NOTIFY_PHONE=0`, `JARVIS_OPEN_WEB_UI=0`.
 
@@ -255,7 +282,7 @@ points at `HANDOFF.md` in the workspace folder. Config: `notify_on_usage_resume`
 `continue_after_intentional_restart`.
 
 - On Windows this works end to end (restart script via PowerShell). The user needs a workspace with a `HANDOFF.md`
-  (section 12) for the continue prompt to be useful.
+  (sections 3a and 12) for the continue prompt to be useful.
 - **Keep the computer awake while waiting (`keep_awake_while_waiting`, default `false`): ASK the user.** Explain: when
   Claude hits a usage limit, Jarvis waits for the reset and then restarts itself. If the computer goes to sleep during
   that wait, the timer cannot fire, so the restart happens only after they wake it. With this switch on, Jarvis asks
@@ -278,22 +305,22 @@ python skills/install.py            # dry run
 python skills/install.py --yes      # copy to ~/.claude/skills and ~/.claude/agents (never overwrites without --force)
 ```
 
-`tile-windows` is Windows only. `use-tokens-freely` expects the workspace repo (section 12).
+`tile-windows` is Windows only. `use-tokens-freely` expects the workspace repo (section 3a).
 `orchestrator-CLAUDE.md.example` is a template for the user's own `~/.claude/CLAUDE.md`; show it, never install it
 automatically.
 
-## 12. The workspace folder (OPTIONAL but recommended)
+## 12. Using the workspace folder (cloned in section 3a)
 
-The `jarvis-workspace` repo (a separate repo, `https://github.com/caden-gietzen/jarvis-workspace`; ask before cloning) is a
-folder next to this one that holds the user's own working notes and the helper tooling. To make **their own**:
+Section 3a already fetched the `jarvis-workspace` repo and copied the templates. What is left is the user's own content:
 
-1. Clone it next to this repo as `jarvis-workspace` (or any path, then set `JARVIS_WORKSPACE_ROOT`).
-2. Copy `templates/*.md` to its root. These become `HANDOFF.md` (running log read after every restart, newest entries
-   at the bottom), `open-questions.md`, `future-tasks.md`, `long-term.md`, `completed-tasks.md`, `blocked.md`.
-   They are git-ignored there on purpose so personal notes are not committed by accident.
-3. Fill in `HANDOFF.md` with the user's standing rules (for example: work only inside the dev folder, ask before
+1. The copied templates are `HANDOFF.md` (running log read after every restart, newest entries at the bottom),
+   `open-questions.md`, `future-tasks.md`, `long-term.md`, `completed-tasks.md`, `blocked.md`. They are git-ignored in the
+   workspace repo on purpose so personal notes are not committed by accident.
+2. Fill in `HANDOFF.md` with the user's standing rules (for example: work only inside the dev folder, ask before
    installing, never commit secrets).
-4. The tooling there (for example the phone QR script) is optional.
+3. The tooling there (for example the phone QR script, section 8) is optional.
+4. If the folder goes missing later (moved, deleted, new machine), Jarvis keeps running and logs `workspace folder not
+   found`; offer to run `python scripts/ensure_workspace.py --clone` again (with their yes).
 
 ## 13. Optional extensions
 
@@ -366,7 +393,7 @@ the user plainly what you found, and propose a minimal fix instead of rewriting 
 Summarize for the user, in plain language: what is working and was actually verified, what you skipped or could not test
 (be specific: macOS, restart, phone), the commands they will use day to day, and where their secrets live
 (`~/.jarvis_web_token`, `~/.jarvis_ntfy_topic`, `~/.jarvis_browser_token`: never share or commit them). Offer to write
-down anything useful in their own `jarvis-workspace/HANDOFF.md`.
+down anything useful in their own `jarvis-workspace/HANDOFF.md`. Confirm the workspace folder exists (section 3a).
 
 ## 17. Contributing skills back (optional)
 

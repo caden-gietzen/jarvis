@@ -19,6 +19,7 @@ from jarvis import restart, ui, usage_monitor  # noqa: E402
 import jarvis.__main__ as jmain  # noqa: E402
 
 ui._log_path = Path(tempfile.gettempdir()) / "jarvis-test-restart-continue.log"
+restart.workspace_missing_message = lambda root=None: None  # the tests must not depend on a workspace folder existing
 NOW = 1_800_000_000.0
 REAL_MARKER, REAL_FLAG = ROOT / ".jarvis_intentional_restart.json", ROOT / ".jarvis_restart_pending"
 results = []

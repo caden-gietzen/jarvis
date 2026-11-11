@@ -235,7 +235,8 @@ def resolve_book(book: str, books_root: Path = None, workspace_root: Path = None
     ws_root = Path(workspace_root or WORKSPACE_ROOT)
     if book.strip().lower() == WORKSPACE_NAME:
         if not ws_root.is_dir():
-            raise PreviewError(f"Workspace folder not found: {ws_root}")
+            raise PreviewError(f"workspace folder not found: {ws_root} (see SETUP.md section 3a, "
+                               "or run scripts/ensure_workspace.py --clone)")
         return ws_root.resolve()
     if book.strip().lower() == STUDY_NOTES_NAME:
         sn = ws_root / STUDY_NOTES_NAME
