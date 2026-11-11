@@ -12,6 +12,10 @@ matches its description. Agents are single Markdown files in `~/.claude/agents/`
 | `../agents/paper-finder` | Finds papers on a topic for a walkthrough; edit its "Default focus" paragraph to your own field | all |
 | `orchestrator-CLAUDE.md.example` | The "orchestrator mode" instructions the author keeps in his global `~/.claude/CLAUDE.md`. A starting point, not a requirement. | all |
 
+## Share your own
+
+Made a skill others might like? Add it as `skills/<name>/SKILL.md` plus a row in the table above and open a pull request (your Claude can walk you through it: `SETUP.md` section 17).
+
 ## Install
 
     python skills/install.py            # dry run: shows what would be copied where

@@ -21,3 +21,12 @@ or account step. Never use anyone else's tokens, topics or hostnames.
 - Config lives in `config.yaml`; relative folders in it are relative to this repo.
 - Windows-only modules are listed in SETUP.md section 1; keep new code degrading gracefully (check `sys.platform`).
 - Match the existing style: small modules, docstrings that explain why, tests next to the behaviour they guard.
+
+## Sharing skills back (standing instruction)
+
+If the user creates or notably improves a skill, agent or helper script (in `~/.claude/skills` or this repo's
+`skills/`) that others might like, offer once per session, at a natural moment, to help propose it upstream as a pull
+request; gently, never nagging, and stop asking if they say no. Never fork, push or open a pull request without their
+explicit yes. Explain in plain words what a pull request is. Sanitize first (no personal paths, hostnames/IPs, tokens,
+emails, private notes) and show the final diff for approval. Full steps: SETUP.md section 17. Ideas that are not skills
+go in an issue.

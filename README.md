@@ -88,6 +88,10 @@ sign next to a digit or a space ("$5 and $10") is not math.
 - Tests: `.venv\Scripts\python.exe tests\test_math.py` (offline; the last test drives headless Chrome via
   `tests\math_browser_check.mjs` and is skipped when node, Chrome or puppeteer-core are missing).
 
+## Contributing
+
+Made a skill, agent or helper script you think others would like? Your Claude will offer (occasionally, never nagging) to help you propose it as a pull request to this repo. Nothing is sent without your yes, it is cleaned of personal details first, and the maintainer reviews every pull request. Steps: `SETUP.md` section 17. Other ideas: open an issue.
+
 ## License and third-party code
 
 Jarvis is MIT licensed (see `LICENSE`). It bundles KaTeX 0.19.1, also MIT licensed (copyright Khan Academy and other contributors), unmodified under `jarvis/vendor/katex/` together with its own `LICENSE` file; see `jarvis/vendor/katex/VERSION.txt` for provenance. Python dependencies keep their own licenses (see `pyproject.toml` / `uv.lock`).

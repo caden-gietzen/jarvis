@@ -367,3 +367,23 @@ Summarize for the user, in plain language: what is working and was actually veri
 (be specific: macOS, restart, phone), the commands they will use day to day, and where their secrets live
 (`~/.jarvis_web_token`, `~/.jarvis_ntfy_topic`, `~/.jarvis_browser_token`: never share or commit them). Offer to write
 down anything useful in their own `jarvis-workspace/HANDOFF.md`.
+
+## 17. Contributing skills back (optional)
+
+Jarvis is shared so people can build on it. If the user makes a skill (or agent, or helper script) that others might
+find useful, offer to help them share it. Do this gently and only with their say-so:
+
+- **When to ask.** When they create a new skill or clearly improve one in `~/.claude/skills` (or this repo's `skills/`
+  folder), when they finish one, or, now and then, when they have skills that are not in this repo. At most once per
+  session. Never nag; if they say no, stop asking.
+- **Explain first.** Many people have never made a pull request. Say it plainly: a pull request is a polite proposal
+  ("here is a change, would you like it?") that the maintainer can read, comment on, accept or decline. Nothing is
+  merged automatically; the maintainer reviews every one.
+- **Never act without an explicit yes.** Do not fork, push or open a pull request until the user clearly says so.
+- **Clean it first.** Remove personal paths, hostnames and IP addresses, tokens, emails, private notes, and anything
+  taken from the user's own workspace. Show the user the final diff and get their approval before going on.
+- **How.** Fork `caden-gietzen/jarvis` under the user's own GitHub account. Add the skill as `skills/<name>/` with a
+  `SKILL.md`, plus a one-line entry in `skills/README.md`. Make a branch, push it to their fork, and open a pull request
+  to the upstream repo (with `gh pr create` if the GitHub CLI is installed, otherwise walk them through the GitHub web
+  page: "Compare & pull request"). Keep it small, and describe what the skill does and how to try it.
+- **Other ideas.** For anything that is not a skill (a bug, a feature idea), suggest opening an issue instead.
