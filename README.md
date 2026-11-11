@@ -90,7 +90,7 @@ sign next to a digit or a space ("$5 and $10") is not math.
 
 ## Contributing
 
-Made a skill, agent or helper script you think others would like? Your Claude will offer (occasionally, never nagging) to help you propose it as a pull request to this repo. Nothing is sent without your yes, it is cleaned of personal details first, and the maintainer reviews every pull request. Steps: `SETUP.md` section 17. Other ideas: open an issue.
+Made a skill, agent or helper script you think others would like? Your Claude will offer (occasionally, never nagging) to help you propose it as a pull request to this repo. Nothing is sent without your yes, it is cleaned of personal details first, and the maintainer reviews every pull request. To start it yourself, tell Claude "share this skill" (the `contribute-skill` skill, with a built-in secret scanner). Guidelines: `CONTRIBUTING.md`; steps: `SETUP.md` section 17. Other ideas: open an issue.
 
 ## License and third-party code
 

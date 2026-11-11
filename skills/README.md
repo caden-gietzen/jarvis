@@ -7,6 +7,7 @@ matches its description. Agents are single Markdown files in `~/.claude/agents/`
 | Name | What it does | Platform |
 |---|---|---|
 | `tile-windows` | Tiles two app windows (default Chrome and VS Code) side by side on the second monitor | Windows only (PowerShell + Win32); macOS/Linux ideas are in its SKILL.md, untested |
+| `contribute-skill` | Helps you share a skill, agent or script as a pull request: checks it, removes personal details, runs a secret scanner (`scripts/scan_contribution.py`), shows the exact public diff and asks before every outward step | all (Python 3 standard library; `gh` optional) |
 | `use-tokens-freely` | "Away mode": mutes Jarvis and works through your task lists with parallel agents, then writes a report. Expects a `jarvis-workspace` folder with `HANDOFF.md` etc. (see the jarvis-workspace repo, `templates/`). | all (mute helper has a curl version) |
 | `../agents/scout, implementer, verifier` | The read-only investigator, the code-changing agent and the test/review agent used by the orchestrator workflow | all |
 | `../agents/paper-finder` | Finds papers on a topic for a walkthrough; edit its "Default focus" paragraph to your own field | all |
@@ -14,7 +15,7 @@ matches its description. Agents are single Markdown files in `~/.claude/agents/`
 
 ## Share your own
 
-Made a skill others might like? Add it as `skills/<name>/SKILL.md` plus a row in the table above and open a pull request (your Claude can walk you through it: `SETUP.md` section 17).
+Made a skill others might like? Tell your Claude "share this skill": the `contribute-skill` skill cleans it, scans it and walks you through the pull request. By hand: add `skills/<name>/SKILL.md` plus a row in the table above and follow `CONTRIBUTING.md` (template: `.github/PULL_REQUEST_TEMPLATE.md`).
 
 ## Install
 

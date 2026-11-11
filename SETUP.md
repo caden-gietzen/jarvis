@@ -387,3 +387,6 @@ find useful, offer to help them share it. Do this gently and only with their say
   to the upstream repo (with `gh pr create` if the GitHub CLI is installed, otherwise walk them through the GitHub web
   page: "Compare & pull request"). Keep it small, and describe what the skill does and how to try it.
 - **Other ideas.** For anything that is not a skill (a bug, a feature idea), suggest opening an issue instead.
+- **Tooling.** Follow the `contribute-skill` skill (`skills/contribute-skill/SKILL.md`, installed by `skills/install.py`): it
+  runs `skills/contribute-skill/scripts/scan_contribution.py` (secrets, personal paths, hostnames, emails), fills the pull request
+  template `.github/PULL_REQUEST_TEMPLATE.md` and applies the rules in `CONTRIBUTING.md`. Do not duplicate those steps here.

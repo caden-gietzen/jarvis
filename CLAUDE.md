@@ -28,5 +28,6 @@ If the user creates or notably improves a skill, agent or helper script (in `~/.
 `skills/`) that others might like, offer once per session, at a natural moment, to help propose it upstream as a pull
 request; gently, never nagging, and stop asking if they say no. Never fork, push or open a pull request without their
 explicit yes. Explain in plain words what a pull request is. Sanitize first (no personal paths, hostnames/IPs, tokens,
-emails, private notes) and show the final diff for approval. Full steps: SETUP.md section 17. Ideas that are not skills
-go in an issue.
+emails, private notes) and show the final diff for approval. Use the `contribute-skill` skill (`skills/contribute-skill/SKILL.md`; scanner
+`skills/contribute-skill/scripts/scan_contribution.py`; PR template `.github/PULL_REQUEST_TEMPLATE.md`; rules in
+`CONTRIBUTING.md`). Overview: SETUP.md section 17. Ideas that are not skills go in an issue.
