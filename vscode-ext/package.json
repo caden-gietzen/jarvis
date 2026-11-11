@@ -1,0 +1,11 @@
+{
+  "name": "jarvis-show-code",
+  "displayName": "Jarvis Show Code",
+  "description": "Lets a local process open a file and highlight a line range via HTTP on 127.0.0.1:47821.",
+  "version": "0.0.2",
+  "publisher": "jarvis",
+  "engines": { "vscode": "^1.60.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "categories": ["Other"]
+}

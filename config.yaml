@@ -1,0 +1,100 @@
+# Jarvis settings. Edit and restart.
+
+# Project Claude Code works in. Override with --project on the command line.
+project_dir: ..                 # relative to this repo: ".." = the folder that holds it; or an absolute path
+
+# Extra folders Claude Code may read and edit, besides project_dir.
+# Edits still ask for permission. Changes to Jarvis itself apply after a restart.
+allowed_dirs: []
+
+audio:
+  device: null              # null = default mic; or a name/index from `.\jarvis devices`
+  sample_rate: 16000        # wake word and Whisper both expect 16 kHz
+
+wake_word:
+  model: hey_jarvis
+  threshold: 0.5            # raise if it triggers falsely, lower if it misses you
+
+endpointing:
+  vad_threshold: 0.5        # speech probability needed to count as talking
+  end_silence_ms: 900       # this much silence ends your turn
+  no_speech_timeout_s: 5    # give up if you say nothing after the wake word
+  max_utterance_s: 0        # longest single recording of you; 0 = no cap (never cut you off). Even then an
+                            # internal safety stop at 600 s ends a recording so a stuck mic can't run forever
+  followup_window_s: 8      # after a reply, keep listening this long without the wake word
+
+stt:
+  engine: local             # local | groq
+  local:
+    model: base.en          # ~1.6 s on this CPU; small.en ~5 s, distil-large-v3 ~14 s
+    compute_type: int8
+    cpu_threads: 0          # 0 = let CTranslate2 decide
+  groq:
+    model: whisper-large-v3-turbo
+    api_key_env: GROQ_API_KEY
+
+tts:
+  engine: piper             # piper | sapi (built-in Windows voice) | none (text only)
+  chime: true               # short tone when it starts listening
+  piper:
+    voice: en_GB-alan-medium  # any file in voices/; `.\jarvis voices` lists them
+    length_scale: 0.67      # < 1 talks faster, > 1 slower (0.67 is about 1.5x speed)
+    volume: 1.0
+  # Hang protection for spoken replies. Replies are never cut by a fixed length cap: the playback deadline is
+  # speak_margin_s + 2 x (a slow reading-time estimate from the text length), so it grows with the reply.
+  # It only exists so a hung voice or audio device can't freeze Jarvis; it is abandoned after the deadline.
+  speak_margin_s: 60        # flat extra seconds on top of the scaled estimate (slow synthesis, slow device); minimum 10
+  speak_max_s: 0            # optional absolute ceiling on one reply in seconds; 0 = none (just the scaled deadline)
+  speak_grace_s: 15         # extra seconds past the deadline before the caller stops waiting on the speaker thread
+                            # (minimum 1; also used by background say()). Invalid values fall back to the default.
+
+claude:
+  model: sonnet             # startup model; null = your Claude Code default; or opus | sonnet | haiku
+                            # switch while running by saying "switch to Sonnet"
+
+# Push a short phone notification (via ntfy) when Jarvis asks for permission.
+# Topic is read from ~/.jarvis_ntfy_topic. JARVIS_NOTIFY_PHONE=0 also disables it.
+notify_phone: true         # does nothing until you create ~/.jarvis_ntfy_topic (see SETUP.md); false = never
+# Push to the phone when the usage limit has reset and Jarvis restarts itself (jarvis/usage_monitor.py).
+notify_on_usage_resume: true
+# After a usage-limit restart, Jarvis feeds itself one "continue where we left off" prompt (read the
+# handoff files, resume unfinished work) so nobody has to say anything. false = restart only.
+auto_continue_after_limit: true
+# After Jarvis restarts itself on purpose (restart flag consumed), it says it is back and continues the
+# handoff by itself, spoken. A hand-started `jarvis run` never does this. false = restart only.
+continue_after_intentional_restart: true
+
+# While waiting for a usage limit to reset, ask Windows not to sleep so the restart timer can fire
+# (jarvis/keepawake.py, SetThreadExecutionState; Windows only). Only matters if you leave the machine
+# unattended. Released as soon as the wait is over. Missing key = false. Ask the user before turning this on (SETUP.md section 10).
+keep_awake_while_waiting: false
+
+# Append one line of token/cost numbers per turn and per subagent to logs\token_ledger.jsonl (no text).
+# Report: .venv\Scripts\python.exe scripts\token_report.py
+token_ledger: true
+
+# Local web page (conversation, agents panel, typed input) served on 127.0.0.1 with a per-run token.
+# The full link is printed at startup and saved to logs\web_url.txt.
+web_ui: true
+
+# Where the web page listens. local = 127.0.0.1 only. tailnet = 127.0.0.1 AND this PC's Tailscale
+# address (private tailnet only, never 0.0.0.0), so the phone can open it. The token is persistent
+# (~/.jarvis_web_token; replace it with `python -m jarvis web-token --rotate`).
+web_bind: local            # local = this computer only (safe default); tailnet = also your Tailscale address (phone access)
+
+# Start the Chrome helper (chrome-ext/helper, port 47822) hidden with Jarvis if it isn't running.
+start_browser_helper: false   # opt-in: the Chrome helper is started with PowerShell (Windows only)
+
+# When Jarvis is started by hand (not after a restart), open the web page in a NEW Chrome tab. The env
+# var JARVIS_OPEN_WEB_UI=0 also turns it off. Needs web_ui: true.
+open_web_ui_on_start: true
+
+# Jarvis's voice on/off ("mute", "voice off", "go quiet" / "voice on", or the page's button; saved in
+# .jarvis_state.json). While the voice is off, spoken yes/no permission prompts are still spoken so you can
+# answer them. false = permission prompts go silent too (answer on the page or the phone).
+muted_speaks_permission_prompts: true
+
+# Dictation (page button, or say "start dictation" / "stop dictation"): records the PC mic until turned off, ignoring
+# pauses, then sends everything as one message. This is the longest one dictation may last, in seconds; it ends by
+# itself and sends what it has. Invalid or 0 = 1800 (30 min). An internal hard stop of 7200 s caps any value.
+dictation_max_s: 1800

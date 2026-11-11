@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e1116">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
+<title>Jarvis: sign in</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: #0e1116; color: #d8dee9; font: 16px/1.5 system-ui, "Segoe UI", sans-serif; display: flex;
+         align-items: center; justify-content: center; padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom); }
+  main { width: 100%; max-width: 420px; }
+  h1 { font-size: 18px; letter-spacing: .12em; margin: 0 0 8px; }
+  p { color: #8b95a5; font-size: 14px; margin: 0 0 14px; }
+  input, button { font: inherit; width: 100%; min-height: 48px; border-radius: 8px; border: 1px solid #242c38;
+                  background: #151a22; color: #d8dee9; padding: 8px 12px; }
+  input:focus { outline: none; border-color: #6cb6ff; }
+  button { margin-top: 10px; cursor: pointer; font-weight: 600; }
+  #msg { color: #e5c07b; min-height: 1.5em; margin-top: 10px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>JARVIS</h1>
+  <p>This device has no active session. Paste your access token (the part after <code>?token=</code> in the link
+     printed in the Jarvis terminal) or open that full link again.</p>
+  <form id="f" autocomplete="off">
+    <input id="t" type="password" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false"
+           placeholder="Access token" aria-label="Access token">
+    <button type="submit">Sign in</button>
+  </form>
+  <div id="msg" role="status" aria-live="polite"></div>
+</main>
+<script>
+"use strict";
+(function () {
+  var msg = document.getElementById("msg");
+  if (new URLSearchParams(location.search).has("token")) msg.textContent = "That token was not accepted. Check it and try again.";
+  document.getElementById("f").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = document.getElementById("t").value.trim();
+    if (!/^[A-Za-z0-9_-]{16,128}$/.test(v)) { msg.textContent = "That does not look like a Jarvis token."; return; }
+    // the server answers with a session cookie, so the token is not needed in the URL again
+    location.replace("/?token=" + encodeURIComponent(v));
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+# vendored third-party files must stay byte-identical (checksums recorded in VERSION.txt)
+jarvis/vendor/** -text

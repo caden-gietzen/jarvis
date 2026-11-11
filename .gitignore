@@ -1,0 +1,33 @@
+.venv/
+__pycache__/
+logs/
+.jarvis_state.json
+voices/
+.jarvis_window.json
+.jarvis_restart_pending
+
+# runtime state, models, tokens
+.jarvis_*
+voices/
+*.onnx
+*.wav
+*token*
+*secret*
+*.env
+.env
+*.pem
+*.key
+phone_qr.png
+*.pyc
+node_modules/
+*.vsix
+*.bak
+*.bak-*
+
+# the ledger code is source, not a secret (the *token* rule above would hide it)
+!token_ledger.py
+!test_token_ledger.py
+!token_report.py
+
+# the away-mode skill is shareable source (the *token* rule above would hide it)
+!skills/use-tokens-freely/

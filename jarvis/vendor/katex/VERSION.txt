@@ -1,0 +1,12 @@
+KaTeX 0.19.1 (MIT License, see LICENSE in this folder)
+Source: npm package "katex" 0.19.1 (https://registry.npmjs.org/katex/-/katex-0.19.1.tgz),
+        sha512-jG8uKntjSEcm2EpQOh0XturpPuuC9r3Sq5HLHdsFdWZT27E672SF19QEi+of0/YeOy15lDgRhKvr5614uRrEfA==
+Fetched 2026-11-10 with `npm install katex` into a throwaway folder outside the repo; only these files were copied
+(unmodified) from the package: dist/katex.min.js, dist/katex.min.css, dist/fonts/*.woff2 (20 files), LICENSE.
+The .woff and .ttf fallbacks listed in katex.min.css are not shipped (every browser Jarvis supports uses woff2).
+sha256:
+  katex.min.js   fa140498b8cfc8302cbe5e7cb1bdbc1f952bc38b3fa258ede09e73edbf9a74bc
+  katex.min.css  00e0b094171b07f58422075f469b4feac2b2f7bce1aeec943c08da4d697f4dcf
+  LICENSE        766ccc1f306c885aa45542a9846bbd0a505b27a0374f146778171c2254ce18e3
+Served only through jarvis.mathsupport.vendor_file (exact allowlist) at /vendor/katex/... by the web UI and the
+Markdown preview servers. To upgrade: repeat the steps, update this file and run tests/test_math.py.

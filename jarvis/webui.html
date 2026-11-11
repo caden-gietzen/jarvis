@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0e1116">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
+<title>Jarvis</title>
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<style>
+  :root { --bg:#0e1116; --panel:#151a22; --panel2:#1b222c; --line:#242c38; --text:#d8dee9; --dim:#8b95a5;
+          --you:#6cb6ff; --jarvis:#7ee0a0; --warn:#e5c07b; --bad:#f07178; --ok:#7ee0a0; --stop:#9aa5b5;
+          --shadow:0 0 40px rgba(0,0,0,.5); --scrim:rgba(0,0,0,.45); color-scheme: dark; }
+  :root[data-theme="light"] { --bg:#f3f5f8; --panel:#ffffff; --panel2:#eef1f5; --line:#d0d7de; --text:#1f2328; --dim:#57606a;
+          --you:#0550ae; --jarvis:#1a7f37; --warn:#8a5200; --bad:#c21f2b; --ok:#1a7f37; --stop:#57606a;
+          --shadow:0 0 30px rgba(31,35,40,.25); --scrim:rgba(31,35,40,.3); color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  html { -webkit-text-size-adjust: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, "Segoe UI", sans-serif;
+         display: flex; flex-direction: column; height: 100vh; height: 100dvh; height: var(--vvh, 100dvh);
+         overflow: hidden; overscroll-behavior: none; position: fixed; top: 0; left: 0; right: 0;
+         padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex: 0 0 auto; }
+  header .status { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; min-width: 0; }
+  header .ctrls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: .12em; font-weight: 700; }
+  .grow { flex: 1; }
+  .pill { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--dim); white-space: nowrap; }
+  .pill.listening { color: var(--you); border-color: var(--you); }
+  .pill.thinking { color: var(--warn); border-color: var(--warn); }
+  .pill.speaking { color: var(--jarvis); border-color: var(--jarvis); }
+  #conn::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+                  background: var(--bad); margin-right: 6px; }
+  #conn.on::before { background: var(--ok); }
+  #conn.wait::before { background: var(--warn); }
+  button { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+           padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--dim); }
+  button:disabled { opacity: .55; cursor: default; }
+  button:focus-visible, .task:focus-visible, .tlrow:focus-visible, summary:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
+  button.stop { color: var(--bad); }
+  main { flex: 1; display: flex; min-height: 0; }
+  #left { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  #conv { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px; }
+  .msg { max-width: 820px; margin: 0 0 14px; white-space: pre-wrap; overflow-wrap: anywhere; padding: 8px 12px;
+         border-radius: 10px; background: var(--panel); border: 1px solid var(--line); border-left-width: 3px; }
+  .msg .who { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 2px; font-weight: 600; }
+  .msg.you { border-left-color: var(--you); }
+  .msg.you .who { color: var(--you); }
+  .msg.jarvis { border-left-color: var(--jarvis); }
+  .msg.jarvis .who { color: var(--jarvis); }
+  .msg.note { color: var(--dim); font-size: 13px; background: none; border: 0; padding: 0 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; max-width: 820px; margin: -6px 0 14px 12px; }
+  .chip { font-size: 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px;
+          color: var(--dim); max-width: 100%; }
+  .chip summary { cursor: pointer; list-style: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 22px; line-height: 22px; }
+  .chip summary::-webkit-details-marker { display: none; }
+  .chip[open] { flex-basis: 100%; border-radius: 10px; }
+  .chip[open] summary { white-space: normal; }
+  .chip .full { padding: 2px 0 6px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--text); overflow-wrap: anywhere; white-space: pre-wrap; }
+  .chip .ic { display: inline-block; width: 1.3em; text-align: center; }
+  .chip.ok .ic { color: var(--ok); }
+  .chip.err .ic { color: var(--bad); }
+  .chip.err { border-color: var(--bad); }
+  form { display: flex; align-items: flex-end; gap: 8px; padding: 12px 16px; flex: 0 0 auto; border-top: 1px solid var(--line); background: var(--panel); }
+  #text { flex: 1; background: var(--bg); color: var(--text); border: 1px solid var(--line);
+          border-radius: 8px; padding: 8px 10px; font: inherit; resize: none; }
+  #form button { min-height: 44px; }
+  #dictToggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+  #dictToggle .ic { font-size: 18px; line-height: 1; }
+  #text { min-height: 44px; max-height: 30vh; }
+  #text:focus { outline: none; border-color: var(--you); }
+  aside { width: 360px; border-left: 1px solid var(--line); overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px; background: var(--bg); }
+  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); margin: 16px 0 6px; font-weight: 600; }
+  aside h2:first-child { margin-top: 0; }
+  .empty { color: var(--dim); font-size: 13px; }
+  .task { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; cursor: pointer; }
+  .task:hover { border-color: var(--dim); }
+  .task .top { display: flex; align-items: center; gap: 8px; }
+  .task .name { flex: 1; font-weight: 600; overflow-wrap: anywhere; }
+  .task .act { color: var(--dim); font-size: 13px; overflow-wrap: anywhere; }
+  .task .meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; color: var(--dim); }
+  .badge { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+  .badge.running { color: var(--warn); border-color: var(--warn); }
+  .badge.done { color: var(--ok); border-color: var(--ok); }
+  .badge.failed { color: var(--bad); border-color: var(--bad); }
+  .badge.stopped { color: var(--stop); border-color: var(--stop); }
+  /* timeline: bar styles differ by pattern/ending as well as color, so status is not color-only */
+  #timeline { margin-bottom: 8px; }
+  .tlrow { display: grid; grid-template-columns: 116px 1fr; gap: 6px; align-items: center; width: 100%; text-align: left;
+           background: none; border: 0; border-radius: 6px; padding: 0 2px; min-height: 28px; }
+  .tlrow:hover { background: var(--panel); }
+  .tlrow .lbl { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tlrow .track { position: relative; height: 14px; background: var(--panel2); border-radius: 4px; }
+  .tlrow .bar { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; min-width: 4px; }
+  .bar.running { background: repeating-linear-gradient(45deg, var(--warn) 0 5px, transparent 5px 8px); border: 1px solid var(--warn); }
+  .bar.done { background: var(--ok); }
+  .bar.failed { background: transparent; border: 2px dashed var(--bad); }
+  .bar.stopped { background: transparent; border: 2px solid var(--stop); }
+  .tlaxis { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); padding-left: 122px; }
+  #perm { border: 1px solid var(--warn); border-left-width: 4px; border-radius: 10px; padding: 10px 12px; background: var(--panel); font-size: 13px; overflow-wrap: anywhere; }
+  #perm .ptitle { color: var(--warn); font-weight: 700; margin-bottom: 6px; }
+  #perm .what { margin-bottom: 6px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; background: var(--panel2);
+                border-radius: 6px; padding: 6px 8px; white-space: pre-wrap; }
+  #perm .row { display: flex; gap: 8px; margin-top: 8px; }
+  #perm .row button { flex: 1; min-height: 44px; font-size: 15px; font-weight: 600; }
+  #perm button.approve { color: var(--ok); border-color: var(--ok); }
+  #perm button.deny { color: var(--bad); border-color: var(--bad); }
+  #perm .note { color: var(--dim); margin-top: 6px; }
+  #perm .voice { color: var(--warn); font-weight: 600; margin-top: 6px; }
+  /* usage bars: status shown by text as well as colour */
+  .pill.voice-off { color: var(--warn); border-color: var(--warn); font-weight: 600; }
+  .pill.conv-off { color: var(--warn); border-color: var(--warn); font-weight: 600; }
+  .pill.dictating { color: var(--bad); border-color: var(--bad); font-weight: 600; }
+  .pill.dictating::before { content: "\25CF "; }
+  .pill.dict-finishing { color: var(--warn); border-color: var(--warn); }
+  button.dictating { color: var(--bad); border-color: var(--bad); font-weight: 600; }
+  #searchbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  #search { flex: 1; min-width: 0; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+            padding: 5px 10px; font: inherit; font-size: 16px; }
+  #search:focus { outline: none; border-color: var(--you); }
+  #searchCount { font-size: 12px; color: var(--dim); white-space: nowrap; }
+  .jv-math { white-space: normal; }
+  .jv-math.jv-display { display: block; text-align: center; overflow-x: auto; overflow-y: hidden; margin: 6px 0; }
+  .jv-math-error { font-family: ui-monospace, Consolas, monospace; font-size: .92em; white-space: pre-wrap; }
+  mark { background: var(--warn); color: #000; border-radius: 3px; padding: 0 1px; }
+  .pill.usage-warn { color: var(--warn); border-color: var(--warn); }
+  .pill.usage-bad { color: var(--bad); border-color: var(--bad); }
+  .urow { margin-bottom: 10px; }
+  .urow .utop { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  .urow .utrack { height: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; margin: 3px 0; }
+  .urow .ufill { height: 100%; width: 0; background: var(--ok); }
+  .urow.warn .ufill { background: var(--warn); }
+  .urow.bad .ufill { background: var(--bad); }
+  .urow.warn .upct { color: var(--warn); }
+  .urow.bad .upct { color: var(--bad); }
+  .urow .usub { font-size: 12px; color: var(--dim); }
+  .feed { font-size: 12.5px; color: var(--dim); }
+  .feed div { padding: 1px 0; overflow-wrap: anywhere; }
+  .feed .err { color: var(--bad); }
+  .hidden { display: none !important; }
+  /* agent detail: drawer on desktop, full-screen sheet on phones */
+  #scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 10; }
+  #detail { position: fixed; top: 0; right: 0; bottom: 0; width: min(540px, 100%); z-index: 11; background: var(--bg);
+            border-left: 1px solid var(--line); box-shadow: var(--shadow); display: flex; flex-direction: column;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) 0; }
+  #detail .dhead { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px 8px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  #detail h2 { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
+  #detail .dsub { color: var(--dim); font-size: 12.5px; }
+  #detail .dmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 16px; font-size: 13px; color: var(--dim); }
+  #detail .dactions { display: flex; align-items: center; gap: 10px; padding: 0 16px 8px; }
+  #detail h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); margin: 8px 16px 4px; font-weight: 600; }
+  #dFeed { flex: 1; min-height: 80px; overflow-y: auto; margin: 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 4px 0; }
+  #dFeed .it { display: grid; grid-template-columns: 46px 1fr 20px; gap: 6px; padding: 3px 10px; font-size: 13px; }
+  #dFeed .it .tm { color: var(--dim); font-variant-numeric: tabular-nums; }
+  #dFeed .it .ds { overflow-wrap: anywhere; }
+  #dFeed .it .rs.ok { color: var(--ok); }
+  #dFeed .it .rs.err { color: var(--bad); }
+  #dFeed .it .rs.run { color: var(--warn); }
+  #dSummary { margin: 0 16px 16px; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+              white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30%; overflow-y: auto; font-size: 13.5px; }
+  @media (pointer: coarse) { button { min-height: 44px; padding: 6px 14px; } .tlrow { min-height: 44px; } .chip summary { min-height: 32px; line-height: 32px; } }
+  #text { font-size: 16px; }   /* 16px stops iOS Safari zooming the page when the box is focused */
+  #details { display: none; }
+  @media (max-width: 520px) {
+    header { padding: 6px 10px; gap: 4px 8px; }
+    header h1 { font-size: 14px; }
+    #form { padding: 8px 10px; }
+    #dictToggle .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    #dictToggle { min-width: 44px; padding: 6px 10px; }
+    #searchbar { padding: 6px 10px; }
+    .urow .utop { flex-wrap: wrap; }
+  }
+  @media (max-width: 800px) {
+    main { flex-direction: column; }
+    #left { display: contents; }   /* searchbar, chat and input become direct children of main, so the input stays last */
+    aside { display: none; width: auto; border-left: 0; border-bottom: 1px solid var(--line); max-height: 40%; flex: 0 0 auto; order: -1; }
+    body.show-details aside { display: block; }   /* agents / usage / permission panel: opened with the Details button */
+    #details { display: inline-block; }
+    header button, #form button, #searchClear { min-height: 44px; }
+    header h1 { flex: 0 0 auto; }
+    header .status { flex: 1 1 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    header .status::-webkit-scrollbar { display: none; }
+    header .status .pill { flex: 0 0 auto; }
+    header .grow { display: none; }
+    header .ctrls { flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+    header .ctrls::-webkit-scrollbar { display: none; }
+    header .ctrls button { flex: 0 0 auto; white-space: nowrap; }
+    header .ctrls #stopSpeech { order: -2; }   /* urgent controls first in the scrolling row */
+    header .ctrls #interrupt { order: -1; }
+    #detail { width: 100%; border-left: 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) { .bar.running { animation: pulse 2s ease-in-out infinite; } }
+  @keyframes pulse { 50% { opacity: .65; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>JARVIS</h1>
+  <div class="status">
+    <span id="mode" class="pill idle" role="status" aria-label="Jarvis is idle">idle</span>
+    <span id="voicePill" class="pill" role="status" aria-label="Jarvis's voice is on" title="Jarvis speaks aloud">Voice on</span>
+    <span id="convPill" class="pill" role="status" aria-label="Conversation mode is on" title="After a reply Jarvis listens for your answer without the wake word">Conversation on</span>
+    <span id="dictPill" class="pill dictating hidden" role="status" aria-label="Dictating" title="Recording your speech from the PC microphone until you stop"></span>
+    <span id="usagePill" class="pill hidden" role="status" title="Current 5-hour session usage"></span>
+    <span id="conn" class="pill">connecting</span>
+  </div>
+  <span class="grow"></span>
+  <div class="ctrls">
+    <button id="theme" type="button" title="Switch dark / light theme" aria-label="Switch theme">Theme</button>
+    <button id="voiceToggle" type="button" aria-pressed="false" title="Turn Jarvis's voice off or on (listening stays on)">Mute voice</button>
+    <button id="convToggle" type="button" aria-pressed="true" title="Conversation mode: after Jarvis speaks he listens for your answer, no wake word needed. Off: say the wake word each time">Turn conversation off</button>
+    <button id="details" type="button" aria-pressed="false" title="Show or hide permission requests, usage, agents and activity">Details</button>
+    <button id="stopSpeech" type="button" title="Stop the current speech">Stop speaking</button>
+    <button id="interrupt" type="button" class="stop" title="Interrupt the whole current turn">Interrupt turn</button>
+  </div>
+</header>
+<main>
+  <div id="left">
+    <div id="searchbar" role="search">
+      <input id="search" type="search" placeholder="Search the conversation" aria-label="Search the conversation" autocomplete="off" spellcheck="false">
+      <span id="searchCount" aria-live="polite"></span>
+      <button id="searchClear" type="button" class="hidden" aria-label="Clear search">Clear</button>
+    </div>
+    <div id="conv" role="log" aria-label="Conversation" aria-live="polite"></div>
+    <form id="form" autocomplete="off">
+      <button id="dictToggle" type="button" aria-pressed="false" aria-label="Start dictation" title="Record your speech from the PC microphone, ignoring pauses, and send it as one message when you stop"><span class="ic" aria-hidden="true">&#127908;</span><span class="lbl">Start dictation</span></button>
+      <textarea id="text" rows="1" enterkeyhint="send" autocapitalize="sentences" placeholder="Type or dictate to Jarvis" aria-label="Message to Jarvis"></textarea>
+      <button type="submit">Send</button>
+    </form>
+  </div>
+  <aside>
+    <h2>Permission request</h2>
+    <div id="permNone" class="empty">None pending.</div>
+    <div id="perm" class="hidden" aria-live="assertive"></div>
+    <div id="permNote" class="empty hidden"></div>
+    <h2>Usage</h2>
+    <div id="usage"></div>
+    <h2>Timeline</h2>
+    <div id="timeline"></div>
+    <h2>Agents</h2>
+    <div id="agents"></div>
+    <h2>Recent activity</h2>
+    <div id="feed" class="feed"></div>
+  </aside>
+</main>
+<div id="scrim" class="hidden"></div>
+<section id="detail" class="hidden" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+  <div class="dhead">
+    <div class="grow"><h2 id="dTitle"></h2><div id="dSub" class="dsub"></div></div>
+    <button id="dClose" type="button" aria-label="Close agent details">Close</button>
+  </div>
+  <div class="dmeta"><span id="dBadge"></span><span id="dKind"></span><span>Elapsed <b id="dEl">0:00</b></span><span id="dTools"></span></div>
+  <div class="dactions"><button id="dStop" type="button" class="stop">Stop this agent</button><span id="dMsg" class="empty" aria-live="polite"></span></div>
+  <h3>Activity</h3>
+  <div id="dFeed" tabindex="0" role="log" aria-label="Agent tool calls, newest at the bottom"></div>
+  <div id="dSumWrap" class="hidden"><h3>Summary</h3><div id="dSummary"></div></div>
+</section>
+<script src="/vendor/katex/katex.min.js"></script>
+<script src="/vendor/jarvis-math.js"></script>
+<script>
+"use strict";
+(function () {
+  var params = new URLSearchParams(location.search);
+  // The token is only in the URL on the first visit; after that the HttpOnly session cookie (same origin,
+  // sent automatically by fetch and EventSource) authenticates, so an empty token here is normal.
+  var token = params.get("token") || "";
+  var $ = function (id) { return document.getElementById(id); };
+  var conv = $("conv"), agentsEl = $("agents"), feedEl = $("feed"), tlEl = $("timeline");
+  var tasks = {}, dispatches = {}, earlyFeed = {}, lastSeq = 0, clockSkew = 0, es = null, retry = 0;
+  var FEED_MAX = 40, TASK_FEED_MAX = 200;
+  var ICON = { running: "▶", done: "✓", failed: "✕", stopped: "■" };
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = String(text);   // text only, never HTML
+    return e;
+  }
+
+  // ---- theme (dark / light; saved in localStorage; default follows the system) ----
+  var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: light)") : null;
+  function storedTheme() { try { return localStorage.getItem("jarvis-theme"); } catch (x) { return null; } }
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    $("theme").textContent = t === "light" ? "Dark theme" : "Light theme";
+  }
+  applyTheme(storedTheme() || (mq && mq.matches ? "light" : "dark"));
+  if (mq && mq.addEventListener) mq.addEventListener("change", function () { if (!storedTheme()) applyTheme(mq.matches ? "light" : "dark"); });
+  $("theme").addEventListener("click", function () {
+    var next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+    try { localStorage.setItem("jarvis-theme", next); } catch (x) {}
+    applyTheme(next);
+  });
+
+  // keep the header and input inside the visible area when the phone keyboard opens (visual viewport)
+  (function () {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    function fit() {
+      document.documentElement.style.setProperty("--vvh", Math.round(vv.height) + "px");
+      document.body.style.transform = vv.offsetTop ? "translateY(" + Math.round(vv.offsetTop) + "px)" : "";
+      if (window.scrollY) window.scrollTo(0, 0);
+    }
+    vv.addEventListener("resize", fit); vv.addEventListener("scroll", fit);
+    fit();
+  })();
+
+  function api(path, body) {
+    return fetch(path, { method: "POST", headers: { "Content-Type": "application/json", "X-Jarvis-Token": token },
+                         body: JSON.stringify(body || {}) })
+      .then(function (r) { return r.json().catch(function () { return { ok: r.ok }; }); })
+      .catch(function (e) { return { ok: false, message: String(e) }; });
+  }
+
+  // ---- conversation ----
+  var chipBox = null, chipsById = {};
+  function nearBottom(e) { return e.scrollHeight - e.scrollTop - e.clientHeight < 80; }
+  function addMsg(role, text) {
+    var stick = nearBottom(conv);
+    var m = el("div", "msg " + (role === "you" ? "you" : "jarvis"));
+    m.appendChild(el("div", "who", role === "you" ? "You" : "Jarvis"));
+    var body = el("div", "", text);
+    m.appendChild(body);
+    m._text = String(text === undefined || text === null ? "" : text); m._body = body;
+    conv.appendChild(m);
+    chipBox = null;
+    filterOne(m, searchQuery());
+    updateCount();
+    if (stick) conv.scrollTop = conv.scrollHeight;
+  }
+  function addNote(text) {
+    var stick = nearBottom(conv);
+    var n = el("div", "msg note", text);
+    n._text = String(text); n._body = n;
+    conv.appendChild(n);
+    chipBox = null;
+    filterOne(n, searchQuery());
+    updateCount();
+    if (stick) conv.scrollTop = conv.scrollHeight;
+  }
+
+  // ---- search: filters and highlights messages client-side (case-insensitive; text nodes + <mark> only) ----
+  var searchBox = $("search");
+  function searchQuery() { return searchBox.value.trim().toLowerCase(); }
+  function setBody(m, q) {
+    var body = m._body, text = m._text, low = text.toLowerCase();
+    // LaTeX math ($..$, \(..\), $$..$$, \[..\]): rendered by the vendored KaTeX through jarvis-math.js (text nodes and
+    // katex.render output only, trust off; anything rejected stays plain text). Search marks text parts only.
+    if (window.JarvisMath && JarvisMath.hasMath(text)) { JarvisMath.fill(body, text, q); return; }
+    body.textContent = "";
+    if (!q || low.length !== text.length) { body.appendChild(document.createTextNode(text)); return; }
+    var pos = 0, i;
+    while ((i = low.indexOf(q, pos)) !== -1) {
+      if (i > pos) body.appendChild(document.createTextNode(text.slice(pos, i)));
+      body.appendChild(el("mark", "", text.slice(i, i + q.length)));
+      pos = i + q.length;
+    }
+    if (pos < text.length) body.appendChild(document.createTextNode(text.slice(pos)));
+  }
+  function filterOne(m, q) {
+    if (m._text === undefined) return;
+    var hit = !q || m._text.toLowerCase().indexOf(q) !== -1;
+    m.classList.toggle("hidden", !hit);
+    if (hit || m._hl) setBody(m, hit ? q : "");
+    m._hl = !!(q && hit);
+  }
+  function updateCount() {
+    var q = searchQuery(), all = conv.querySelectorAll(".msg"), total = 0, shown = 0;
+    for (var i = 0; i < all.length; i++) {
+      if (all[i]._text === undefined) continue;
+      total++;
+      if (!all[i].classList.contains("hidden")) shown++;
+    }
+    $("searchCount").textContent = q ? (shown === 0 ? "No matches" : shown + (shown === 1 ? " match" : " matches") + " of " + total) : "";
+    $("searchClear").classList.toggle("hidden", !q);
+    var boxes = conv.querySelectorAll(".chips");
+    for (var j = 0; j < boxes.length; j++) boxes[j].classList.toggle("hidden", !!q);   // tool chips are not searched: hidden while filtering
+  }
+  function applySearch() {
+    var q = searchQuery(), all = conv.querySelectorAll(".msg");
+    for (var i = 0; i < all.length; i++) filterOne(all[i], q);
+    updateCount();
+  }
+  searchBox.addEventListener("input", applySearch);
+  searchBox.addEventListener("keydown", function (e) { if (e.key === "Escape") { searchBox.value = ""; applySearch(); } });
+  $("searchClear").addEventListener("click", function () { searchBox.value = ""; applySearch(); searchBox.focus(); });
+  // a tool call in the conversation: a small collapsible chip, grouped with its neighbours
+  function addChip(ev) {
+    var stick = nearBottom(conv);
+    if (!chipBox || chipBox.parentNode !== conv) { chipBox = el("div", "chips"); conv.appendChild(chipBox); }
+    var d = el("details", "chip");
+    var s = el("summary", "");
+    s.appendChild(el("span", "ic", "⚙"));
+    s.appendChild(document.createTextNode(ev.label || ev.name || "tool"));
+    d.appendChild(s);
+    d.appendChild(el("div", "full", ev.description || ev.name || ""));
+    chipBox.appendChild(d);
+    if (ev.tool_use_id) chipsById[ev.tool_use_id] = d;
+    while (chipBox.childNodes.length > 40) chipBox.removeChild(chipBox.firstChild);
+    if (stick) conv.scrollTop = conv.scrollHeight;
+  }
+  function markChip(id, isErr) {
+    var d = chipsById[id];
+    if (!d) return;
+    d.classList.add(isErr ? "err" : "ok");
+    d.querySelector(".ic").textContent = isErr ? "✕" : "✓";
+    delete chipsById[id];
+  }
+
+  // ---- mode + permission ----
+  var voiceMuted = false;
+  function setVoice(muted) {
+    voiceMuted = !!muted;
+    var vp = $("voicePill");
+    vp.className = "pill" + (voiceMuted ? " voice-off" : "");
+    vp.textContent = voiceMuted ? "Voice muted" : "Voice on";
+    vp.setAttribute("aria-label", voiceMuted ? "Jarvis's voice is muted: text only, listening stays on" : "Jarvis's voice is on");
+    vp.title = voiceMuted ? "Jarvis is not speaking aloud; text still appears" : "Jarvis speaks aloud";
+    var b = $("voiceToggle");
+    b.textContent = voiceMuted ? "Unmute voice" : "Mute voice";
+    b.setAttribute("aria-pressed", voiceMuted ? "true" : "false");
+  }
+  var convOn = true;
+  function setConversation(on) {
+    convOn = on !== false;
+    var cp = $("convPill");
+    cp.className = "pill" + (convOn ? "" : " conv-off");
+    cp.textContent = convOn ? "Conversation on" : "Conversation off";
+    cp.setAttribute("aria-label", convOn ? "Conversation mode is on: Jarvis listens for your answer after each reply" : "Conversation mode is off: say the wake word to talk");
+    cp.title = convOn ? "After a reply Jarvis listens for your answer without the wake word" : "Jarvis waits for the wake word after each reply";
+    var b = $("convToggle");
+    b.textContent = convOn ? "Turn conversation off" : "Turn conversation on";
+    b.setAttribute("aria-pressed", convOn ? "true" : "false");
+  }
+  function setMode(m) { var p = $("mode"); p.textContent = m; p.className = "pill " + m; p.setAttribute("aria-label", "Jarvis is " + m); }
+  // dictation: recording the PC microphone until turned off (phase: idle | starting | recording | finishing)
+  var dict = { on: false, phase: "idle", since: null }, dictBusy = false;
+  function dictText() {
+    if (dict.phase === "finishing") return "Finishing dictation...";
+    return "Dictating" + (dict.since && dict.phase === "recording" ? " " + fmt(nowSec() - dict.since) : "");
+  }
+  function setDictation(d) {
+    dict = { on: !!(d && d.on), phase: (d && d.phase) || "idle", since: (d && d.since) || null };
+    var active = dict.phase !== "idle", pill = $("dictPill"), b = $("dictToggle");
+    pill.className = "pill " + (dict.phase === "finishing" ? "dict-finishing" : "dictating") + (active ? "" : " hidden");
+    pill.textContent = dictText();
+    pill.setAttribute("aria-label", dict.phase === "finishing" ? "Finishing dictation, sending it" : "Dictating: recording your speech");
+    b.querySelector(".lbl").textContent = dict.on ? "Stop dictation" : "Start dictation";
+    b.querySelector(".ic").textContent = dict.on ? "\u25A0" : "\uD83C\uDFA4";
+    b.setAttribute("aria-label", dict.on ? "Stop dictation" : "Start dictation");
+    b.classList.toggle("dictating", dict.on);
+    b.setAttribute("aria-pressed", dict.on ? "true" : "false");
+    b.disabled = dict.phase === "finishing" || dictBusy;
+  }
+  var permTimer = null, permNoteTimer = null, curPerm = null, permCount = null;
+  function showPermNote(text) {
+    var n = $("permNote"); n.textContent = text; n.classList.remove("hidden");
+    clearTimeout(permNoteTimer); permNoteTimer = setTimeout(function () { n.classList.add("hidden"); }, 6000);
+  }
+  function answerPerm(p, decision, btns, status) {
+    btns.forEach(function (b) { b.disabled = true; });
+    status.textContent = "Sending...";
+    api("/permission", { id: p.id, decision: decision }).then(function (r) {
+      if (r && r.ok) { status.textContent = decision === "approve" ? "Approved, waiting for Jarvis..." : "Denied, waiting for Jarvis..."; return; }
+      if (r && r.error === "handled") status.textContent = r.by === "web" ? "Already answered." : "Handled by voice";
+      else if (r && r.error === "expired") status.textContent = "Expired. Answer by voice.";
+      else status.textContent = "Not accepted (" + ((r && (r.error || r.message)) || "error") + "). Answer by voice.";
+    });
+  }
+  $("details").addEventListener("click", function () {
+    var on = document.body.classList.toggle("show-details");
+    this.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  function setPerm(p) {
+    var box = $("perm");
+    if (p && !document.body.classList.contains("show-details")) { document.body.classList.add("show-details"); $("details").setAttribute("aria-pressed", "true"); }   // phone: a permission request must be seen
+    clearTimeout(permTimer); curPerm = p || null; permCount = null;
+    box.textContent = "";
+    if (!p) { box.classList.add("hidden"); $("permNone").classList.remove("hidden"); return; }
+    box.classList.remove("hidden"); $("permNone").classList.add("hidden"); $("permNote").classList.add("hidden");
+    box.appendChild(el("div", "ptitle", "⚠ Jarvis needs permission: " + (p.tool || "tool")));
+    box.appendChild(el("div", "what", p.summary || ""));   // summary text only
+    var left = p.expires_ts ? p.expires_ts - nowSec() : 0;
+    if (p.voice_only || !p.id) { box.appendChild(el("div", "voice", "🎤 Voice only: answer out loud (destructive command).")); return; }
+    if (p.expires_ts && left <= 0) { box.appendChild(el("div", "note", "Expired. Answer by voice.")); return; }
+    var row = el("div", "row"), status = el("div", "note", "");
+    var ok = el("button", "approve", "✓ Approve"), no = el("button", "deny", "✕ Deny");
+    ok.type = no.type = "button";
+    ok.addEventListener("click", function () { answerPerm(p, "approve", [ok, no], status); });
+    no.addEventListener("click", function () { answerPerm(p, "deny", [ok, no], status); });
+    row.appendChild(ok); row.appendChild(no);
+    box.appendChild(row); box.appendChild(status);
+    if (p.expires_ts) {
+      permCount = el("div", "note", ""); box.appendChild(permCount);
+      permTimer = setTimeout(function () {
+        if (curPerm === p) { ok.disabled = no.disabled = true; status.textContent = "Expired. Answer by voice."; permCount.textContent = ""; permCount = null; }
+      }, Math.max(0, left * 1000));
+    }
+  }
+
+  // ---- recent activity ----
+  function addFeed(text, cls) {
+    if (!text) return;
+    var d = el("div", cls || "", text);
+    feedEl.insertBefore(d, feedEl.firstChild);
+    while (feedEl.childNodes.length > FEED_MAX) feedEl.removeChild(feedEl.lastChild);
+  }
+
+  // ---- agents ----
+  function nowSec() { return (Date.now() + clockSkew) / 1000; }
+  function fmt(s) {
+    s = Math.max(0, Math.floor(s));
+    var m = Math.floor(s / 60), r = s % 60;
+    return m + ":" + (r < 10 ? "0" : "") + r;
+  }
+  function sortedTasks() {
+    var list = Object.keys(tasks).map(function (k) { return tasks[k]; });
+    list.sort(function (a, b) {
+      var ra = a.status === "running" ? 0 : 1, rb = b.status === "running" ? 0 : 1;
+      return ra - rb || b.started_at - a.started_at;
+    });
+    return list;
+  }
+  function statusBadge(status) { return el("span", "badge " + status, (ICON[status] || "") + " " + status); }
+  function stopTask(t, btn, msgEl) {
+    btn.disabled = true;
+    api("/cancel", { task_id: t.task_id }).then(function (r) {
+      var m = (r && r.message) || "stop requested";
+      addFeed(m, r && r.ok === false ? "err" : "");
+      if (msgEl) msgEl.textContent = m;
+      if (r && r.ok === false) btn.disabled = false;
+    });
+  }
+  function renderAgents() {
+    var list = sortedTasks();
+    agentsEl.textContent = "";
+    if (!list.length) agentsEl.appendChild(el("div", "empty", "No agents running."));
+    list.forEach(function (t) {
+      var card = el("div", "task");
+      card.setAttribute("role", "button"); card.tabIndex = 0;
+      card.setAttribute("aria-label", "Open details for " + (t.name || t.task_id));
+      var top = el("div", "top");
+      top.appendChild(el("div", "name", t.name || t.task_id));
+      top.appendChild(statusBadge(t.status));
+      card.appendChild(top);
+      card.appendChild(el("div", "act", t.activity || t.summary || ""));
+      var meta = el("div", "meta");
+      meta.appendChild(el("span", "", t.kind || ""));
+      var timer = el("span", "elapsed", "");
+      timer.setAttribute("data-id", t.task_id);
+      meta.appendChild(timer);
+      if (t.feed && t.feed.length) meta.appendChild(el("span", "", t.feed.length + " tool calls"));
+      meta.appendChild(el("span", "grow"));
+      if (t.status === "running") {
+        var b = el("button", "stop", "Stop");
+        b.type = "button";
+        b.addEventListener("click", function (e) { e.stopPropagation(); stopTask(t, b); });
+        meta.appendChild(b);
+      }
+      card.appendChild(meta);
+      card.addEventListener("click", function () { openDetail(t.task_id); });
+      card.addEventListener("keydown", function (e) {
+        if (e.target === card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openDetail(t.task_id); }
+      });
+      agentsEl.appendChild(card);
+    });
+    tick();
+    renderTimeline();
+    if (openId) renderDetail();
+  }
+
+  // ---- timeline (plain DOM; bars differ by pattern as well as color) ----
+  var tlSig = "", tlRows = {}, tlAxis = null;
+  function treeOrder() {
+    var all = Object.keys(tasks).map(function (k) { return tasks[k]; });
+    var byTool = {};
+    all.forEach(function (t) { if (t.tool_use_id) byTool[t.tool_use_id] = t; });
+    var kids = {}, roots = [];
+    all.sort(function (a, b) { return a.started_at - b.started_at; });
+    all.forEach(function (t) {
+      var p = t.parent && byTool[t.parent];
+      if (p && p !== t) (kids[p.task_id] = kids[p.task_id] || []).push(t); else roots.push(t);
+    });
+    var out = [];
+    (function walk(list, depth) {
+      list.forEach(function (t) { out.push({ t: t, depth: depth }); if (kids[t.task_id]) walk(kids[t.task_id], Math.min(depth + 1, 3)); });
+    })(roots, 0);
+    return out;
+  }
+  function renderTimeline() {
+    var order = treeOrder();
+    var sig = order.map(function (o) { return o.t.task_id + ":" + o.depth; }).join("|");
+    if (sig !== tlSig) {
+      tlSig = sig; tlRows = {}; tlEl.textContent = "";
+      if (!order.length) { tlEl.appendChild(el("div", "empty", "Nothing yet.")); tlAxis = null; return; }
+      order.forEach(function (o) {
+        var row = el("button", "tlrow"); row.type = "button";
+        var lbl = el("span", "lbl"); lbl.style.paddingLeft = (o.depth * 10) + "px";
+        var track = el("span", "track"), bar = el("span", "bar");
+        track.appendChild(bar); row.appendChild(lbl); row.appendChild(track);
+        row.addEventListener("click", function () { openDetail(o.t.task_id); });
+        tlEl.appendChild(row);
+        tlRows[o.t.task_id] = { lbl: lbl, bar: bar, depth: o.depth, row: row };
+      });
+      tlAxis = el("div", "tlaxis"); tlAxis.appendChild(el("span", "", "0:00")); tlAxis.appendChild(el("span", "", ""));
+      tlEl.appendChild(tlAxis);
+    }
+    if (!order.length) return;
+    var now = nowSec(), t0 = Infinity, t1 = 0;
+    order.forEach(function (o) { t0 = Math.min(t0, o.t.started_at); t1 = Math.max(t1, o.t.finished_at || now); });
+    var span = Math.max(t1 - t0, 10);
+    order.forEach(function (o) {
+      var r = tlRows[o.t.task_id], t = o.t;
+      if (!r) return;
+      var s = (t.started_at - t0) / span * 100, w = ((t.finished_at || now) - t.started_at) / span * 100;
+      r.bar.className = "bar " + t.status;
+      r.bar.style.left = s.toFixed(2) + "%"; r.bar.style.width = Math.max(w, 1).toFixed(2) + "%";
+      r.lbl.textContent = (o.depth ? "└ " : "") + (ICON[t.status] || "") + " " + (t.name || t.task_id);
+      r.row.title = (t.name || t.task_id) + " (" + t.status + ", " + fmt((t.finished_at || now) - t.started_at) + ")";
+      r.row.setAttribute("aria-label", (t.name || t.task_id) + ", " + t.status + ", " + fmt((t.finished_at || now) - t.started_at) + ". Open details.");
+    });
+    if (tlAxis) tlAxis.lastChild.textContent = fmt(span);
+  }
+
+  var anyRunning = false;
+  function tick() {
+    anyRunning = false;
+    if (dict.phase === "recording") $("dictPill").textContent = dictText();
+    var spans = agentsEl.querySelectorAll(".elapsed");
+    for (var i = 0; i < spans.length; i++) {
+      var t = tasks[spans[i].getAttribute("data-id")];
+      if (t) { spans[i].textContent = fmt((t.finished_at || nowSec()) - t.started_at); }
+    }
+    Object.keys(tasks).forEach(function (k) { if (tasks[k].status === "running") anyRunning = true; });
+    if (anyRunning) renderTimeline();
+    if (openId && tasks[openId]) $("dEl").textContent = fmt((tasks[openId].finished_at || nowSec()) - tasks[openId].started_at);
+    if (permCount && curPerm && curPerm.expires_ts) {
+      var left = Math.max(0, curPerm.expires_ts - nowSec());
+      permCount.textContent = left > 0 ? "Expires in " + fmt(left) : "";
+    }
+  }
+  setInterval(tick, 1000);
+
+  // ---- usage (rate-limit windows; updated by snapshot + usage events, re-rendered every 30 s) ----
+  var usage = {};
+  var USAGE_ROWS = [["five_hour", "Current session (5 h)"], ["seven_day", "Weekly (7 days)"]];
+  function usageLevel(u) {
+    if (!u) return "";
+    var p = u.utilization_pct;
+    if (u.status === "rejected" || (p !== null && p !== undefined && p >= 90)) return "bad";
+    if (u.status === "allowed_warning" || (p !== null && p !== undefined && p >= 75)) return "warn";
+    return "ok";
+  }
+  function resetText(ts) {
+    if (!ts) return "";
+    var left = ts - nowSec();
+    if (left <= 0) return "reset time passed";
+    if (left < 6 * 3600) {
+      var m = Math.round(left / 60), h = Math.floor(m / 60);
+      return "resets in " + (h ? h + "h " : "") + (m % 60) + "m";
+    }
+    var d = new Date(ts * 1000), pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    var sameDay = d.toDateString() === new Date().toDateString();
+    return "resets " + (sameDay ? "" : d.toLocaleDateString(undefined, { weekday: "short" }) + " ") + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function usageLabel(u) {
+    var p = u.utilization_pct;
+    if (p !== null && p !== undefined) return Math.round(p) + "% used";
+    return u.status === "rejected" ? "limit reached" : "no percent reported";
+  }
+  function renderUsage() {
+    var box = $("usage"), pill = $("usagePill");
+    box.textContent = "";
+    var any = false;
+    USAGE_ROWS.forEach(function (r) {
+      var u = usage[r[0]];
+      var row = el("div", "urow" + (u ? " " + usageLevel(u) : ""));
+      var top = el("div", "utop");
+      top.appendChild(el("span", "", r[1]));
+      if (!u) { top.appendChild(el("span", "upct", "no usage data yet")); row.appendChild(top); box.appendChild(row); return; }
+      any = true;
+      var lbl = usageLabel(u);
+      if (u.status === "rejected") lbl += " (blocked)"; else if (u.status === "allowed_warning") lbl += " (warning)";
+      var pctEl = el("span", "upct", lbl);
+      if (u.source === "statusline") pctEl.title = "from Claude Code status line";
+      top.appendChild(pctEl);
+      row.appendChild(top);
+      var track = el("div", "utrack"), fill = el("div", "ufill");
+      var pct = u.utilization_pct;
+      track.setAttribute("role", "progressbar");
+      track.setAttribute("aria-label", r[1] + ": " + lbl);
+      track.setAttribute("aria-valuemin", "0"); track.setAttribute("aria-valuemax", "100");
+      if (pct !== null && pct !== undefined) track.setAttribute("aria-valuenow", String(Math.round(Math.max(0, Math.min(100, pct)))));
+      fill.style.width = (u.status === "rejected" && (pct === null || pct === undefined) ? 100 : Math.max(0, Math.min(100, pct || 0))) + "%";
+      track.appendChild(fill); row.appendChild(track);
+      var rt = resetText(u.resets_at);
+      if (rt) row.appendChild(el("div", "usub", rt));
+      box.appendChild(row);
+    });
+    var f = usage.five_hour;
+    if (!f) { pill.classList.add("hidden"); return; }
+    pill.classList.remove("hidden");
+    var lv = usageLevel(f);
+    pill.className = "pill" + (lv === "bad" ? " usage-bad" : lv === "warn" ? " usage-warn" : "");
+    pill.textContent = "5h " + (f.utilization_pct !== null && f.utilization_pct !== undefined ? Math.round(f.utilization_pct) + "%" : (f.status === "rejected" ? "limit" : "?")) +
+                       (lv === "bad" ? " ✕" : lv === "warn" ? " ⚠" : "");
+    pill.setAttribute("aria-label", "Usage, current session: " + usageLabel(f) + (lv === "bad" ? ", blocked or nearly full" : lv === "warn" ? ", warning" : ""));
+    pill.title = "Current 5-hour session usage: " + usageLabel(f) + (f.source === "statusline" ? " (from Claude Code status line)" : "");
+  }
+  setInterval(renderUsage, 30000);
+
+  // ---- agent detail (drawer / sheet) ----
+  var openId = null, lastFocus = null, detailQueued = false;
+  function openDetail(id) {
+    if (!tasks[id]) return;
+    if (!openId) lastFocus = document.activeElement;
+    openId = id;
+    $("scrim").classList.remove("hidden"); $("detail").classList.remove("hidden");
+    $("dMsg").textContent = "";
+    renderDetail(true);
+    $("dClose").focus();
+  }
+  function closeDetail() {
+    openId = null;
+    $("scrim").classList.add("hidden"); $("detail").classList.add("hidden");
+    if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (x) {}
+  }
+  function queueDetail() {
+    if (!openId || detailQueued) return;
+    detailQueued = true;
+    requestAnimationFrame(function () { detailQueued = false; if (openId) renderDetail(); });
+  }
+  function renderDetail(fresh) {
+    var t = tasks[openId];
+    if (!t) { closeDetail(); return; }
+    $("dTitle").textContent = t.name || t.task_id;
+    $("dSub").textContent = (t.subagent_type ? t.subagent_type + " · " : "") + t.task_id;
+    var b = $("dBadge"); b.textContent = ""; b.appendChild(statusBadge(t.status));
+    $("dKind").textContent = "Kind: " + (t.kind || "task");
+    $("dTools").textContent = (t.feed ? t.feed.length : 0) + " tool calls";
+    $("dEl").textContent = fmt((t.finished_at || nowSec()) - t.started_at);
+    $("dStop").classList.toggle("hidden", t.status !== "running");
+    var f = $("dFeed"), stick = fresh || nearBottom(f);
+    f.textContent = "";
+    var items = t.feed || [];
+    if (!items.length) f.appendChild(el("div", "empty", t.status === "running" ? "  Waiting for the first tool call..." : "  No tool calls recorded."));
+    items.forEach(function (e) {
+      var it = el("div", "it");
+      it.appendChild(el("span", "tm", fmt(e.ts - t.started_at)));
+      it.appendChild(el("span", "ds", e.description || e.tool));
+      var rs = el("span", "rs " + (e.ok === true ? "ok" : e.ok === false ? "err" : (t.status === "running" ? "run" : "")),
+                  e.ok === true ? "✓" : e.ok === false ? "✕" : (t.status === "running" ? "…" : ""));
+      rs.title = e.ok === true ? "succeeded" : e.ok === false ? "failed" : "no result seen";
+      it.appendChild(rs);
+      f.appendChild(it);
+    });
+    if (stick) f.scrollTop = f.scrollHeight;
+    var sum = t.summary || "";
+    $("dSumWrap").classList.toggle("hidden", t.status === "running" || !sum);
+    $("dSummary").textContent = sum;
+  }
+  $("dClose").addEventListener("click", closeDetail);
+  $("scrim").addEventListener("click", closeDetail);
+  $("dStop").addEventListener("click", function () { if (tasks[openId]) stopTask(tasks[openId], $("dStop"), $("dMsg")); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && openId) closeDetail(); });
+
+  // ---- events ----
+  function pushFeed(t, entry) {
+    t.feed = t.feed || [];
+    t.feed.push(entry);
+    if (t.feed.length > TASK_FEED_MAX) t.feed.splice(0, t.feed.length - TASK_FEED_MAX);
+  }
+  var firstSnap = true;
+  function applySnapshot(s) {
+    var keepPos = !firstSnap && !nearBottom(conv), prevTop = conv.scrollTop;   // reconnect: don't yank a reader to the bottom
+    firstSnap = false;
+    clockSkew = s.ts * 1000 - Date.now();
+    lastSeq = s.seq;
+    conv.textContent = ""; feedEl.textContent = ""; tasks = {}; chipBox = null; chipsById = {}; earlyFeed = {};
+    // conversation lines and the main agent's recent tool chips, interleaved by event order (seq)
+    var items = (s.conversation || []).map(function (c) { return { seq: c.seq || 0, c: c }; })
+      .concat((s.recent_tools || []).map(function (r) { return { seq: r.seq || 0, r: r }; }));
+    items.sort(function (a, b) { return a.seq - b.seq; });
+    items.forEach(function (it) {
+      if (it.c) { addMsg(it.c.role, it.c.text); return; }
+      addChip({ label: it.r.label, name: it.r.name, description: it.r.description, tool_use_id: it.r.id });
+      if (it.r.ok !== null && it.r.ok !== undefined && it.r.id) markChip(it.r.id, !it.r.ok);
+    });
+    (s.tasks || []).forEach(function (t) { t.feed = t.feed || []; tasks[t.task_id] = t; });
+    setMode(s.mode || "idle");
+    setVoice(s.voice_muted);
+    setConversation(s.conversation_mode);
+    setDictation(s.dictation);
+    setPerm(s.pending_permission);
+    usage = s.usage || {};
+    renderUsage();
+    renderAgents();
+    conv.scrollTop = keepPos ? prevTop : conv.scrollHeight;
+  }
+  function applyEvent(ev) {
+    if (ev.seq <= lastSeq) return;
+    lastSeq = ev.seq;
+    var t;
+    switch (ev.kind) {
+      case "conversation": addMsg(ev.role, ev.text); break;
+      case "mode": setMode(ev.mode); break;
+      case "voice": setVoice(ev.muted); break;
+      case "conversation_mode": setConversation(ev.on); break;
+      case "dictation": setDictation(ev); break;
+      case "agent_dispatch": if (ev.tool_use_id) dispatches[ev.tool_use_id] = ev; addFeed("agent: " + (ev.description || ev.subagent_type || "")); break;
+      case "tool_use":
+        addFeed(ev.label || ev.description || ev.name);
+        if (!ev.parent) { addChip(ev); break; }
+        var entry = { ts: ev.ts, tool: ev.name || "", description: ev.label || ev.description || ev.name || "", id: ev.tool_use_id, ok: null };
+        var linked = false;
+        Object.keys(tasks).forEach(function (k) {
+          if (tasks[k].tool_use_id === ev.parent) {
+            linked = true;
+            pushFeed(tasks[k], entry);
+            if (tasks[k].status === "running") tasks[k].activity = entry.description;
+          }
+        });
+        if (!linked) { (earlyFeed[ev.parent] = earlyFeed[ev.parent] || []).push(entry); }
+        renderAgents();
+        break;
+      case "tool_result":
+        if (!ev.parent) { markChip(ev.tool_use_id, ev.is_error); break; }
+        Object.keys(tasks).forEach(function (k) {
+          (tasks[k].feed || []).forEach(function (e) { if (e.id === ev.tool_use_id) e.ok = !ev.is_error; });
+        });
+        queueDetail();
+        break;
+      case "task_started":
+        var d = dispatches[ev.tool_use_id] || {};
+        var nm = ev.description || d.description || ev.task_id;
+        tasks[ev.task_id] = { task_id: ev.task_id, name: nm, description: nm, kind: ev.task_kind || "", activity: "",
+                              status: "running", started_at: ev.ts, finished_at: null, tool_use_id: ev.tool_use_id,
+                              parent: d.parent || null, subagent_type: d.subagent_type || null, summary: "",
+                              feed: (ev.tool_use_id && earlyFeed[ev.tool_use_id]) || [] };
+        if (ev.tool_use_id) delete earlyFeed[ev.tool_use_id];
+        renderAgents(); break;
+      case "task_progress":
+        t = tasks[ev.task_id];
+        if (t && t.status === "running") { t.activity = ev.activity || ev.description || t.activity; renderAgents(); }
+        break;
+      case "task_done":
+        t = tasks[ev.task_id];
+        if (t && t.status === "running") { t.status = ev.status || "done"; t.finished_at = ev.ts; t.summary = ev.summary || ""; renderAgents(); }
+        break;
+      case "narration": if (ev.level === "activity") addFeed(ev.text); break;
+      case "permission_request": setPerm({ tool: ev.tool, summary: ev.summary, id: ev.id, voice_only: ev.voice_only, expires_ts: ev.expires_ts }); break;
+      case "permission_result":
+        setPerm(null);
+        addFeed("permission " + (ev.allowed ? "allowed" : "denied") + (ev.by ? " by " + ev.by : "") + ": " + (ev.tool || ""));
+        if (ev.by === "voice") showPermNote("Handled by voice");
+        else if (ev.by === "web") showPermNote(ev.allowed ? "Approved from the web page." : "Denied from the web page.");
+        break;
+      case "usage": usage[ev.type || "five_hour"] = ev; renderUsage(); break;
+      case "error": addFeed(ev.text, "err"); break;
+    }
+  }
+
+  var reconnectTimer = null;
+  function setConn(state, label) { var c = $("conn"); c.className = "pill " + state; c.id = "conn"; c.textContent = label; }
+  function connect() {
+    clearTimeout(reconnectTimer); reconnectTimer = null;
+    if (es) { es.onerror = es.onopen = null; es.close(); es = null; }
+    var q = [];
+    if (token) q.push("token=" + encodeURIComponent(token));
+    if (lastSeq > 0) q.push("since=" + lastSeq);
+    var url = "/events" + (q.length ? "?" + q.join("&") : "");   // relative: works behind an https proxy
+    setConn("wait", retry ? "reconnecting" : "connecting");
+    var mine = es = new EventSource(url);
+    es.onopen = function () { retry = 0; setConn("on", "connected"); };
+    es.addEventListener("snapshot", function (e) { try { applySnapshot(JSON.parse(e.data)); } catch (x) {} });
+    es.addEventListener("bus", function (e) { try { applyEvent(JSON.parse(e.data)); } catch (x) {} });
+    es.onerror = function () {
+      if (es !== mine) return;
+      es.onerror = es.onopen = null; es.close(); es = null;
+      retry++;
+      setConn("", "disconnected (retrying; if Jarvis restarted, reopen the link)");
+      reconnectTimer = setTimeout(connect, Math.min(1000 * retry, 5000));
+    };
+  }
+  // iOS Safari freezes or kills the stream while the page is in the background: when it comes back,
+  // reconnect at once with since=lastSeq (missed events are replayed, or a fresh snapshot is sent).
+  function resume() { if (document.visibilityState !== "hidden") { retry = 0; connect(); } }
+  document.addEventListener("visibilitychange", resume);
+  window.addEventListener("pageshow", function (e) { if (e.persisted) resume(); });
+  window.addEventListener("online", resume);
+
+  // ---- input ----
+  var box = $("text");
+  function send() {
+    var text = box.value.trim();
+    if (!text) return;
+    box.value = "";
+    api("/send", { text: text }).then(function (r) { if (!r || r.ok === false) addNote("Not sent: " + ((r && (r.error || r.message)) || "unknown error")); });
+  }
+  $("form").addEventListener("submit", function (e) { e.preventDefault(); send(); });
+  box.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+  $("stopSpeech").addEventListener("click", function () { api("/stop-speech"); });
+  $("voiceToggle").addEventListener("click", function () {
+    api("/voice", { muted: !voiceMuted }).then(function (r) {
+      if (r && r.ok === true) setVoice(r.muted);
+      else addNote("Voice setting not changed: " + ((r && (r.error || r.message)) || "unknown error"));
+    });
+  });
+  $("convToggle").addEventListener("click", function () {
+    api("/conversation", { on: !convOn }).then(function (r) {
+      if (r && r.ok === true) setConversation(r.on);
+      else addNote("Conversation mode not changed: " + ((r && (r.error || r.message)) || "unknown error"));
+    });
+  });
+  $("dictToggle").addEventListener("click", function () {
+    dictBusy = true; setDictation(dict);   // the "dictation" event (not this reply) updates the button and pill
+    api("/dictation", { on: !dict.on }).then(function (r) {
+      dictBusy = false; setDictation(dict);
+      if (!r || r.ok !== true) addNote("Dictation not changed: " + ((r && (r.error || r.message)) || "unknown error"));
+    });
+  });
+  $("interrupt").addEventListener("click", function () {
+    api("/cancel", {}).then(function (r) { addFeed((r && r.message) || "interrupt requested", r && r.ok === false ? "err" : ""); });
+  });
+
+  renderAgents();
+  renderUsage();
+  connect();
+})();
+</script>
+</body>
+</html>

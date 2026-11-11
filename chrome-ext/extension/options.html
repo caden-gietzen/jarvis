@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Jarvis Browser options</title>
+  <style>
+    body { font: 14px system-ui, sans-serif; max-width: 640px; margin: 24px auto; }
+    input[type=password], input[type=text] { width: 100%; box-sizing: border-box; font-family: monospace; }
+    textarea { width: 100%; height: 160px; box-sizing: border-box; font-family: monospace; }
+    h2 { margin-top: 28px; }
+    button { margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Jarvis Browser</h1>
+  <p>Status: <b id="status">checking...</b></p>
+
+  <h2>Token</h2>
+  <p>Paste the contents of <code>~/.jarvis_browser_token (in your home folder)</code>
+     (or run <code>start_helper.ps1 -CopyToken</code> and paste).</p>
+  <input type="password" id="token" autocomplete="off" spellcheck="false">
+  <button id="saveToken">Save token</button>
+
+  <h2>Allowed sites</h2>
+  <p>One hostname per line. Jarvis can only show, clear or read pages on these hosts.</p>
+  <textarea id="hosts" spellcheck="false"></textarea><br>
+  <button id="saveHosts">Save sites</button>
+  <button id="reset">Reset to defaults</button>
+  <p id="msg"></p>
+  <script src="options.js"></script>
+</body>
+</html>

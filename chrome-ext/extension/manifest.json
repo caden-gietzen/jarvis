@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Jarvis Browser",
+  "version": "0.0.1",
+  "description": "Lets Jarvis open pages, scroll to a passage and highlight it. Never clicks, types or submits.",
+  "permissions": ["tabs", "scripting", "storage", "activeTab", "alarms"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "options_ui": { "page": "options.html", "open_in_tab": true }
+}
